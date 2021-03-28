@@ -3,6 +3,7 @@ use std::fmt::{Formatter, Debug};
 use core::fmt;
 use std::string::FromUtf8Error;
 use std::sync::PoisonError;
+use std::io;
 
 #[derive(Debug, Clone)]
 pub struct Error{
@@ -33,7 +34,13 @@ impl From<&dyn Debug> for Error{
     }
 }
 
-
+impl From<io::Error> for Error{
+    fn from(e: io::Error) -> Self {
+        Error{
+            error: format!("{:?}",e)
+        }
+    }
+}
 impl From<&str> for Error{
     fn from(e: &str) -> Self {
         Error{

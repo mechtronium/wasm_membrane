@@ -54,12 +54,12 @@ impl WasmMembrane {
                 pass=false
             }
         }
-        match self.instance.exports.get_native_function::<i32,()>("membrane_dealloc_buffer"){
+        match self.instance.exports.get_native_function::<i32,()>("membrane_guest_dealloc_buffer"){
             Ok(_) => {
-                self.log("wasm", "verified: membrane_dealloc_buffer( i32 )");
+                self.log("wasm", "verified: membrane_guest_dealloc_buffer( i32 )");
             }
             Err(_) => {
-                self.log("wasm", "failed: membrane_dealloc_buffer( i32 )");
+                self.log("wasm", "failed: membrane_guest_dealloc_buffer( i32 )");
                 pass=false
             }
         }
@@ -78,34 +78,6 @@ impl WasmMembrane {
                 }
             };
         }
-
-
-
-
-        match self.instance.exports.get_native_function::<(),()>("mechtron_init"){
-            Ok(func) => {
-
-                self.log("wasm", "verified: mechtron_init( )");
-                match func.call()
-                {
-                    Ok(_) => {
-                        self.log("wasm", "passed: mechtron_init( )");
-                    }
-                    Err(e) => {
-
-                        self.log("wasm", format!("failed: mechtron_init( ).  {:?}", e).as_str());
-                    }
-                }
-            }
-            Err(e) => {
-                self.log("wasm", format!("failed: mechtron_init( ) {:?}", e).as_str());
-                pass=false
-            }
-        }
-
-        //let mut memory = self.instance.exports.get_memory("memory")?;
-        //memory.grow(10).unwrap();
-
 
         match pass{
             true => Ok(()),
@@ -184,11 +156,11 @@ impl WasmMembrane {
     {
         let raw = self.read_buffer(buffer_id)?;
         let rtn = String::from_utf8(raw)?;
-        self.membrane_dealloc_buffer(buffer_id)?;
+        self.membrane_guest_dealloc_buffer(buffer_id)?;
         Ok(rtn)
     }
 
-    fn membrane_dealloc_buffer( &self, buffer_id: i32 )->Result<(),Error>
+    fn membrane_guest_dealloc_buffer( &self, buffer_id: i32 )->Result<(),Error>
     {
         self.instance.exports.get_native_function::<i32,()>("membrane_guest_dealloc_buffer")?.call(buffer_id.clone())?;
         Ok(())
@@ -294,14 +266,12 @@ impl WasmMembrane {
         let host = Arc::new(RwLock::new(WasmHost::new()));
 
         let imports = imports! { "env"=>{
-        "membrane_host_log"=>Function::new_native_with_env(module.store(),Env{host:host.clone()},|env:&Env,type_ptr:WasmPtr<u8,Array>,type_len:i32,ptr:WasmPtr<u8,Array>,len:i32| {
+        "membrane_host_log"=>Function::new_native_with_env(module.store(),Env{host:host.clone()},|env:&Env,buffer:i32| {
                 match env.unwrap()
                 {
                    Ok(membrane)=>{
-                        let memory = membrane.instance.exports.get_memory("memory").unwrap();
-                        let log_type= type_ptr.get_utf8_string(memory, type_len as u32).unwrap();
-                        let str = ptr.get_utf8_string(memory, len as u32).unwrap();
-                        membrane.log(log_type.as_str(),str.as_str());
+                        let message = membrane.consume_string(buffer).unwrap_or("LOG ERROR".to_string());
+                        membrane.log("guest",message.as_str());
                    },
                    Err(_)=>{}
                 }
@@ -360,7 +330,7 @@ impl BufferLock
 
     pub fn release(&self) -> Result<(),Error>
     {
-        self.membrane.membrane_dealloc_buffer(self.id)?;
+        self.membrane.membrane_guest_dealloc_buffer(self.id)?;
         Ok(())
     }
 }
@@ -379,21 +349,16 @@ mod test
     use std::fs::File;
     use std::io::Read;
     use std::sync::Arc;
-
-    use wasmer::{Cranelift, JIT, Module, Store};
-
-    use mechtron_common::core::*;
-    use mechtron_common::state::{ReadOnlyStateMeta, State, StateMeta};
-
-    use crate::error::Error;
     use crate::membrane::WasmMembrane;
-    use crate::star::Star;
-    use crate::cache::default_cache;
+    use crate::error::Error;
+    use wasmer::{Store, JIT, Cranelift, Module};
+    use std::env;
+
 
     fn membrane() -> Result<Arc<WasmMembrane>, Error>
     {
-        /*
-        let path = "../../repo/mechtron.io/examples/0.0.1/hello-world/wasm/hello-world.wasm";
+        println!("CURRENT DIR {:?}", env::current_dir()? );
+        let path = "../../../guest/rust/wasm_membrane_guest_example/pkg/wasm_membrane_bg.wasm";
 
         let mut file = File::open(path)?;
         let mut data = Vec::new();
@@ -401,13 +366,10 @@ mod test
 
         let store = Store::new(&JIT::new(Cranelift::default()).engine());
         let module = Module::new(&store, data)?;
-        let mut membrane = WasmMembrane::new(Arc::new(module), Node::default_cache().configs.clone()).unwrap();
+        let membrane = WasmMembrane::new(Arc::new(module)).unwrap();
         membrane.init()?;
 
         Ok(membrane)
-
-         */
-        unimplemented!()
     }
 
 
@@ -418,23 +380,14 @@ mod test
 
         let buffer_id = membrane.write_string("Hello From MEMBRANE!")?;
 
-        membrane.membrane_dealloc_buffer(buffer_id)?;
+        membrane.membrane_guest_dealloc_buffer(buffer_id)?;
 
         Ok(())
     }
 
 
-    #[test]
-    fn test_cache() -> Result<(), Error>
-    {
-        let membrane = membrane()?;
 
-        membrane.test_cache()?;
-
-        Ok(())
-    }
-
-
+    /*
     #[test]
     fn test_panic() -> Result<(), Error>
     {
@@ -453,64 +406,10 @@ mod test
         Ok(())
     }
 
+     */
 
-    #[test]
-    fn test_mechtron_create() -> Result<(), Error>
-    {
-        let membrane = membrane()?;
 
-        match membrane.test_panic()
-        {
-            Ok(_) => {
-                assert!(false)
-            }
-            Err(_) => {}
-        }
 
-        membrane.test_ok()?;
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_inject_and_extract_state() -> Result<(), Error>
-    {
-        let cache = default_cache();
-        let membrane = membrane()?;
-
-        let config = cache.configs.mechtrons.get(&CORE_MECHTRON_NEUTRON )?;
-        let mut state = State::new(&cache.configs,config.clone())?;
-        state.set_taint(true);
-
-        let state_buffer_id= membrane.inject_state(&state.read_only()? )?;
-        let extracted_state = membrane.extract_state(state_buffer_id)?;
-
-        assert_eq!(state.is_tainted()?, extracted_state.is_tainted()?);
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_grow_state() -> Result<(), Error>
-    {
-        let cache = default_cache();
-        let membrane = membrane()?;
-
-        let config = cache.configs.mechtrons.get(&CORE_MECHTRON_NEUTRON )?;
-        let mut state = State::new(&cache.configs,config.clone())?;
-        state.set_taint(false);
-
-        let state_buffer_id= membrane.inject_state(&state.read_only()?)?;
-
-        membrane.test_modify_state(state_buffer_id);
-
-        let updated_state = membrane.extract_state(state_buffer_id)?;
-
-        assert!(!state.is_tainted()?);
-        assert!(updated_state.is_tainted()?);
-
-        Ok(())
-    }
 
 }
 
