@@ -1,0 +1,1 @@
+/Users/scott/projects/wasm_membrane/host/rust/target/debug/libwasm_membrane_host.rlib: /Users/scott/projects/wasm_membrane/host/rust/wasm_membrane_host/src/error.rs /Users/scott/projects/wasm_membrane/host/rust/wasm_membrane_host/src/lib.rs /Users/scott/projects/wasm_membrane/host/rust/wasm_membrane_host/src/membrane.rs

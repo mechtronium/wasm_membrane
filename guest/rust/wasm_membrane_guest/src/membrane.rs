@@ -11,16 +11,12 @@ lazy_static! {
   pub static ref BUFFER_INDEX: AtomicI32 = AtomicI32::new(0);
 }
 
-pub static OK: i32 = 0;
-pub static ERROR : i32 = -1;
+//pub static OK: i32 = 0;
+//pub static ERROR : i32 = -1;
 pub static VERSION: i32 = 1;
 
 extern "C"
 {
-    pub fn membrane_host_alloc_buffer(len: i32) -> i32;
-    pub fn membrane_host_write_to_buffer(buffer: i32, index: i32, value: i32);
-    pub fn membrane_host_dealloc_buffer(buffer: i32);
-
     pub fn membrane_host_log(buffer: i32);
     pub fn membrane_host_panic(buffer: i32);
 }
@@ -45,14 +41,6 @@ pub fn membrane_guest_alloc_buffer(len: i32) -> i32
 }
 
 #[wasm_bindgen]
-pub fn membrane_guest_write_to_buffer(buffer: i32, index: i32, value: i32)
-{
-    let mut buffers = BUFFERS.write().unwrap();
-    let bytes: &mut Vec<u8> = buffers.get_mut(&buffer).unwrap();
-    bytes[index as usize] = value as u8;
-}
-
-#[wasm_bindgen]
 pub fn membrane_guest_dealloc_buffer(id: i32)
 {
     let mut buffers = BUFFERS.write().unwrap();
@@ -63,12 +51,6 @@ pub fn membrane_guest_dealloc_buffer(id: i32)
 pub fn membrane_guest_test(test_buffer_message: i32)
 {
     log(membrane_consume_string(test_buffer_message).unwrap().as_str());
-}
-
-#[wasm_bindgen]
-pub fn membrane_guest_allows_buffer_ptr() -> i32
-{
-    OK
 }
 
 #[wasm_bindgen]
@@ -96,20 +78,20 @@ pub fn membrane_guest_get_buffer_len(id: i32) ->i32
 pub fn log(message: &str) {
     unsafe
     {
-        let buffer = membrane_host_write_str(message);
+        let buffer = membrane_write_str(message);
         membrane_host_log(buffer);
     }
 }
 
 pub fn panic(message: &str)
 {
-    let buffer_id = membrane_host_write_str(message);
+    let buffer_id = membrane_write_str(message);
     unsafe {
         membrane_host_panic(buffer_id);
     }
 }
 
-pub fn membrane_host_write_buffer(bytes: Vec<u8>) -> i32 {
+pub fn membrane_write_buffer(bytes: Vec<u8>) -> i32 {
     let mut buffers = BUFFERS.write().unwrap();
     let buffer_id = BUFFER_INDEX.fetch_add(1, Ordering::Relaxed);
     buffers.insert(buffer_id, bytes);
@@ -149,11 +131,11 @@ pub fn membrane_consume_string(buffer: i32) -> Result<String, Error>
     Ok(string)
 }
 
-pub fn membrane_host_write_str(string: &str) -> i32 {
-    membrane_host_write_string(string.to_string())
+pub fn membrane_write_str(string: &str) -> i32 {
+    membrane_write_string(string.to_string())
 }
 
-pub fn membrane_host_write_string(mut string: String) -> i32 {
+pub fn membrane_write_string(mut string: String) -> i32 {
     let mut buffers = BUFFERS.write().unwrap();
     let buffer_id = BUFFER_INDEX.fetch_add(1, Ordering::Relaxed);
     unsafe {

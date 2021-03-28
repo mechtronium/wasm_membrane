@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/rust.iml" filepath="$PROJECT_DIR$/.idea/rust.iml" />
+      <module fileurl="file://$PROJECT_DIR$/wasm_membrane_host/wasm_membrane_host.iml" filepath="$PROJECT_DIR$/wasm_membrane_host/wasm_membrane_host.iml" />
+      <module fileurl="file://$PROJECT_DIR$/wasm_membrane_host_example/wasm_membrane_host_example.iml" filepath="$PROJECT_DIR$/wasm_membrane_host_example/wasm_membrane_host_example.iml" />
+    </modules>
+  </component>
+</project>

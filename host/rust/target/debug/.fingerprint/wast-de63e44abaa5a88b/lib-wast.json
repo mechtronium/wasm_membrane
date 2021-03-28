@@ -1,0 +1,1 @@
+{"rustc":1359611718356577327,"features":"[\"default\", \"wasm-module\"]","target":13531132741220358889,"profile":6299028598154287785,"path":5958365839072146669,"deps":[[12001621790153489341,"leb128",false,523752838000571482]],"local":[{"CheckDepInfo":{"dep_info":"debug/.fingerprint/wast-de63e44abaa5a88b/dep-lib-wast"}}],"rustflags":[],"metadata":6695064617921018371,"config":0}

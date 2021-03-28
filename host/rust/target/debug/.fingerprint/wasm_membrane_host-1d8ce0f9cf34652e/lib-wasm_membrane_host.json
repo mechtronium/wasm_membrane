@@ -1,0 +1,1 @@
+{"rustc":1359611718356577327,"features":"[]","target":17541453554491082842,"profile":18074012566298724745,"path":15649521915411879568,"deps":[[8540445095788610818,"wasmer",false,18025086157962432772]],"local":[{"CheckDepInfo":{"dep_info":"debug/.fingerprint/wasm_membrane_host-1d8ce0f9cf34652e/dep-lib-wasm_membrane_host"}}],"rustflags":[],"metadata":9151309739213755127,"config":0}

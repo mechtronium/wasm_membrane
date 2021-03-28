@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "wasm_membrane_host",
+    "wasm_membrane_host_example"
+]
