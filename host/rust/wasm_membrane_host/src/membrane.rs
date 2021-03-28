@@ -2,10 +2,12 @@ use std::sync::{Arc, RwLock, Weak};
 
 
 use crate::error::Error;
-use wasmer::{Module, Instance, WasmPtr, Array, WasmerEnv, imports, Function};
+use wasmer::{Module, Instance, WasmPtr, Array, WasmerEnv, imports, Function, RuntimeError};
+
+pub static VERSION: i32 = 1;
 
 pub struct WasmMembrane {
-    instance: Instance,
+    pub instance: Instance,
     //host: Arc<RwLock<WasmHost>>,
 }
 
@@ -24,6 +26,33 @@ impl WasmMembrane {
                 pass=false
             }
         }
+
+        match self.instance.exports.get_native_function::<(),i32>("membrane_guest_version"){
+            Ok(func) => {
+                self.log("wasm", "verified: membrane_guest_version( ) -> i32");
+                match func.call()
+                {
+                    Ok(version) => {
+                        if version == VERSION
+                        {
+                            self.log("wasm", format!("passed: membrane_guest_version( ) -> i32 [USING VERSION {}]", version).as_str());
+                        }
+                        else {
+                            self.log("wasm", format!("fail : membrane_guest_version( ) -> i32 [THIS HOST CANNOT WORK WITH VERSION {}]", version).as_str());
+                            pass = false;
+                        }
+                    }
+                    Err(error) => {
+                        self.log("wasm", "fail : membrane_guest_version( ) -> i32 [CALL FAILED]");
+                    }
+                }
+            }
+            Err(_) => {
+                self.log("wasm", "failed: membrane_guest_version( ) -> i32");
+                pass=false
+            }
+        }
+
 
         match self.instance.exports.get_native_function::<i32,i32>("membrane_guest_alloc_buffer"){
             Ok(_) => {
@@ -111,7 +140,7 @@ impl WasmMembrane {
 
     pub fn log( &self, log_type:&str, message: &str )
     {
-        eprintln!("{} : {}",log_type,message);
+        println!("{} : {}",log_type,message);
     }
 
     pub fn write_string(&self, string: &str )->Result<i32,Error>
@@ -199,9 +228,19 @@ impl WasmMembrane {
 
     pub fn test_log(&self)->Result<(),Error>
     {
-        self.instance.exports.get_native_function::<(),()>("wasm_test_log").unwrap().call()?;
+        let log_message_string = "Some Log Message";
+        let log_message_buffer = self.write_string(log_message_string)?;
+        self.instance.exports.get_native_function::<i32,()>("membrane_guest_test_log").unwrap().call(log_message_buffer)?;
         Ok(())
     }
+
+    pub fn test_endless_loop(&self)->Result<(),Error>
+    {
+        self.instance.exports.get_native_function::<(),()>("membrane_guest_example_test_endless_loop").unwrap().call()?;
+        Ok(())
+    }
+
+
 }
 
 #[derive(Clone)]
@@ -409,29 +448,23 @@ mod test
     }
 
 
-
-    /*
     #[test]
-    fn test_panic() -> Result<(), Error>
+    pub fn test_log() -> Result<(), Error>
     {
         let membrane = membrane()?;
-
-        match membrane.test_panic()
-        {
-            Ok(_) => {
-                assert!(false)
-            }
-            Err(_) => {}
-        }
-
-        membrane.test_ok()?;
+        membrane.test_log()?;
 
         Ok(())
     }
 
-     */
+    #[test]
+    pub fn test_endless_loop() -> Result<(), Error>
+    {
+        let membrane = membrane()?;
+        membrane.test_endless_loop()?;
 
-
+        Ok(())
+    }
 
 
 }

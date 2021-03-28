@@ -11,8 +11,6 @@ lazy_static! {
   pub static ref BUFFER_INDEX: AtomicI32 = AtomicI32::new(0);
 }
 
-//pub static OK: i32 = 0;
-//pub static ERROR : i32 = -1;
 pub static VERSION: i32 = 1;
 
 extern "C"
@@ -70,6 +68,14 @@ pub fn membrane_guest_get_buffer_len(id: i32) ->i32
     let buffer = buffer_info.get(&id).unwrap();
     buffer.len() as _
 }
+
+#[wasm_bindgen]
+pub fn membrane_guest_test_log(log_message_buffer: i32)
+{
+    let log_message = membrane_consume_string(log_message_buffer).unwrap();
+    log( log_message.as_str() );
+}
+
 
 //////////////////////////////////////////////
 // Convenience methods
