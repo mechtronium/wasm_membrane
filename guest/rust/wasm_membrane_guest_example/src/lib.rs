@@ -20,5 +20,5 @@ pub fn test()
 #[wasm_bindgen]
 pub fn membrane_guest_init()
 {
-    set_panic_hook();
+    //set_panic_hook();
 }
