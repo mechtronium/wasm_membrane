@@ -26,16 +26,3 @@ pub fn membrane_guest_init()
 }
 
 
-
-#[wasm_bindgen]
-pub fn membrane_guest_example_test_endless_loop()
-{
-    let ten_secs = time::Duration::from_secs(10);
-    //let now = time::Instant::now();
-    loop
-    {
-        log("sleeping 10 secs...");
-        //thread::sleep(ten_secs);
-    }
-
-}

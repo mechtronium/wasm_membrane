@@ -234,9 +234,11 @@ impl WasmMembrane {
         Ok(())
     }
 
-    pub fn test_endless_loop(&self)->Result<(),Error>
+    pub async fn test_endless_loop(&self)->Result<(),Error>
     {
+println!("test endless loop");
         self.instance.exports.get_native_function::<(),()>("membrane_guest_example_test_endless_loop").unwrap().call()?;
+println!("test endless loop... done");
         Ok(())
     }
 
@@ -415,6 +417,7 @@ mod test
     use crate::error::Error;
     use wasmer::{Store, JIT, Cranelift, Module};
     use std::env;
+    use tokio::runtime::Runtime;
 
 
     fn membrane() -> Result<Arc<WasmMembrane>, Error>
@@ -429,6 +432,7 @@ mod test
         let store = Store::new(&JIT::new(Cranelift::default()).engine());
         let module = Module::new(&store, data)?;
         let membrane = WasmMembrane::new(Arc::new(module)).unwrap();
+
         membrane.init()?;
 
         Ok(membrane)
@@ -457,14 +461,28 @@ mod test
         Ok(())
     }
 
+    /*
+
     #[test]
     pub fn test_endless_loop() -> Result<(), Error>
     {
         let membrane = membrane()?;
-        membrane.test_endless_loop()?;
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async {
+//            membrane.test_endless_loop().await.unwrap();
+            tokio::spawn(async{println!("Hello Tokio!")});
+
+            let handle = tokio::spawn(async move {membrane.test_endless_loop().await;});
+            handle.abort();
+        });
+//        let handle = tokio::spawn( async move {membrane.test_endless_loop(); } );
+
+        //handle.await.unwrap();
 
         Ok(())
     }
+
+     */
 
 
 }
