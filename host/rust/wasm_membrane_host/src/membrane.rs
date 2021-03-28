@@ -2,7 +2,7 @@ use std::sync::{Arc, RwLock, Weak};
 
 
 use crate::error::Error;
-use wasmer::{Module, Instance, WasmPtr, Array, WasmerEnv,imports,Function};
+use wasmer::{Module, Instance, WasmPtr, Array, WasmerEnv, imports, Function};
 
 pub struct WasmMembrane {
     instance: Instance,
@@ -61,6 +61,29 @@ impl WasmMembrane {
             Err(_) => {
                 self.log("wasm", "failed: membrane_guest_dealloc_buffer( i32 )");
                 pass=false
+            }
+        }
+
+        match self.instance.exports.get_native_function::<(),()>("membrane_guest_init"){
+
+            Ok(func) => {
+                self.log("wasm", "verified: membrane_guest_init()");
+
+                match func.call()
+                {
+                    Ok(_) => {
+                        self.log("wasm", "passed: membrane_guest_init()");
+                    }
+                    Err(error) => {
+
+                        self.log("wasm", format!("failed: membrane_guest_init() ERROR: {:?}",error).as_str());
+                        pass = false;
+                    }
+                }
+
+            }
+            Err(_) => {
+                self.log("wasm", "failed: membrane_guest_init() [NOT REQUIRED]");
             }
         }
 
@@ -374,7 +397,7 @@ mod test
 
 
     #[test]
-    fn test_wasm() -> Result<(), Error>
+    pub fn test_wasm() -> Result<(), Error>
     {
         let membrane = membrane()?;
 
